@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<figure name="protagonist">
+    <bone type="line" len="70" angle="90">
+        <bone type="line" len="50" angle="60"/>
+        <bone type="line" len="50" angle="90"/>
+        <bone type="line" len="50" angle="120"/>
+        <bone w="w" type="line" len="60" angle="0"/>
+        <bone w="w" type="line" len="60" angle="180">
+            <bone type="line" len="60" angle="135"/>
+        </bone>
+    </bone>
+</figure>
