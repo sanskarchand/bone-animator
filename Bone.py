@@ -36,7 +36,7 @@ class Gimbal:
 
         if self.rect.collidepoint(mousePos):
             self.selected = True
-            self.mouse_prev= mousePos
+            self.mouse_prev = mousePos
 
     def unselect(self):
         self.selected = False
@@ -177,6 +177,7 @@ class Bone:
         if self.wunderkind:
             self.wunder_gimbal.checkPressed(mousePos)
         for child in self.children:
+            print("CHECK PRESS")
             child.checkPressed(mousePos)
     
     def unselectGimbals(self):

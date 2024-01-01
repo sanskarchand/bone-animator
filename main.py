@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-import tkinter as tk
 import pygame as pg
-import Bone, Gui, const
+import Bone
+import const
 import os
+from gui.gui import GUI
+from gui.const import POS_UNDEF
+
 # last change: 2020-11-22
 class MainApplication:
 
@@ -13,50 +16,63 @@ class MainApplication:
         
         self.figure_def = Bone.Figure.fromFile("man_figure.xml")
         self.current_figure = self.figure_def
+        self.ctrl_rect: pg.Rect | None = None
+
+        self.init_pg()
+        self.init_gui()
         
+    def init_pg(self):
         pg.init()
+        pg.font.init()
+
         self.main_screen = pg.display.set_mode(const.TOTAL_DIM)
+        pg.display.set_caption("Pivot Clone")
+        self.clock = pg.time.Clock()
+    
+    
+    def init_gui(self):
+        self.gui = GUI(self.main_screen)
+
+        ## make rect
+        canv_w, canv_h = const.CANVAS_DIM
+
+        self.ctrl_rect = pg.Rect(0, 0, canv_w, canv_h)
+        self.ctrl_container = self.gui.make_horizontal_container(
+                                (self.ctrl_rect.x, self.ctrl_rect.y),
+                                self.ctrl_rect.w, self.ctrl_rect.h)
+
         
-        self.rect_canvas = pg.Rect(0, 0, const.CANVAS_DIM[0], const.CANVAS_DIM[1])
+        but_frame = self.gui.make_text_button(POS_UNDEF, 160, 20, "Add Frame", self.addFrame, ())
+        self.ctrl_container.push_item(but_frame)
 
         self.surf_canvas = pg.Surface(list(const.CANVAS_DIM), pg.SRCALPHA, 32)
         self.surf_canvas = self.surf_canvas.convert_alpha()
 
-        self.rect_ctrl_right = pg.Rect(const.CANVAS_DIM[0], 0, 
-                const.TOTAL_DIM[0]-const.CANVAS_DIM[0], const.TOTAL_DIM[1]-const.CANVAS_DIM[1])
-        self.rect_ctrl_bottom = pg.Rect(0, const.CANVAS_DIM[1],
-                const.CANVAS_DIM[0], const.TOTAL_DIM[1]-const.CANVAS_DIM[1])
-        self.rect_export = pg.Rect(*const.EXPORT_RECT)
 
-        pg.display.set_caption("Pivot Clone")
-        self.clock = pg.time.Clock()
-        
-        self.buttons = []
-        bound_x = const.CANVAS_DIM[0]
-        self.button_add_frame = Gui.Button((bound_x + 20, 20), "Add Frame")
-        self.button_add_frame.assignCallback(self.addFrame)
-
-        self.buttons.append(self.button_add_frame)
-
+        self.gui.add_elem(self.ctrl_container)
 
     def addFrame(self):
         self.current_figure.addFrame()
         self.current_frame += 1
         print("FRAMESSSSS")
 
-    def exportFrame(self):
-        None
-    def mainLoop(self):
+    def mainloop (self):
 
         while self.running:
+            self.mouse_pos = pg.event.get()
+
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.running = False
+                    break
+                #else:
+                #    self.gui.update(event, self.mouse_pos)
 
+                print("event type is", event.type)
+                
+                ## TODO: replace this with a scene manager or soemthing
                 if event.type == pg.MOUSEBUTTONDOWN:
                     self.figure_def.checkPressed(self.mouse_pos)
-                    for button in self.buttons:
-                        button.checkPressed(self.mouse_pos)
 
                 if event.type == pg.MOUSEBUTTONUP:
                     self.figure_def.root.unselectGimbals()
@@ -64,18 +80,11 @@ class MainApplication:
                         button.checkReleased(self.mouse_pos)
 
             
-            self.mouse_pos = pg.mouse.get_pos()
-            self.figure_def.update()
-            for button in self.buttons:
-                button.update(self.mouse_pos)
-
             self.main_screen.fill(const.GREY)
-            pg.draw.rect(self.main_screen, const.BGCOLOR, self.rect_canvas)
-            #self.main_screen.blit(self.surf_canvas, (0, 0))
-            #pg.draw.rect(self.main_screen, const.RED, self.rect_export, 2)
+            pg.draw.rect(self.main_screen, const.BGCOLOR, self.ctrl_rect)
+            self.gui.draw()
             self.figure_def.draw(self.main_screen)
-            for button in self.buttons:
-                button.draw(self.main_screen)
+            
             pg.display.update()
             self.clock.tick(const.FPS)
 
@@ -83,4 +92,5 @@ class MainApplication:
 
 
 m_app = MainApplication()
-m_app.mainLoop()
+if __name__ == "__main__":
+    m_app.mainloop()

@@ -1,0 +1,3 @@
+POS_UNDEF = (-1, -1)
+DEBUG_DRAW = False
+LINE_GAP = 5
