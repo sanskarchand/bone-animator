@@ -59,16 +59,15 @@ class MainApplication:
     def mainloop (self):
 
         while self.running:
-            self.mouse_pos = pg.event.get()
+            self.mouse_pos = pg.mouse.get_pos()
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.running = False
                     break
-                #else:
-                #    self.gui.update(event, self.mouse_pos)
+                else:
+                    self.gui.update(event, self.mouse_pos)
 
-                print("event type is", event.type)
                 
                 ## TODO: replace this with a scene manager or soemthing
                 if event.type == pg.MOUSEBUTTONDOWN:
@@ -76,8 +75,6 @@ class MainApplication:
 
                 if event.type == pg.MOUSEBUTTONUP:
                     self.figure_def.root.unselectGimbals()
-                    for button in self.buttons:
-                        button.checkReleased(self.mouse_pos)
 
             
             self.main_screen.fill(const.GREY)
