@@ -80,9 +80,10 @@ class MainApplication:
             self.main_screen.fill(const.BGCOLOR)
             pg.draw.rect(self.main_screen, const.GREY, self.ctrl_rect)
             self.gui.draw()
-
+            
+            # No update calls necessary as of now
+            # update should be called renderChanges anyway
             self.figure_def.update()
-            print("UPDATE FIN===================")
             self.figure_def.draw(self.main_screen)
             
             pg.display.update()

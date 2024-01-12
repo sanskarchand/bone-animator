@@ -21,6 +21,7 @@ class Gimbal:
         self.rad = 10
         self.rect = pg.Rect(self.pos_x -self.rad, self.pos_y - self.rad, 2*self.rad, 2*self.rad)
 
+
         self.visible = True
         self.selected = False
         self.color_normal = const.COL_GIMB_ROT
@@ -30,42 +31,44 @@ class Gimbal:
 
         self.old_angle = 0
         self.mouse_prev = (None, None)
-
+    
 
     def checkPressed(self, mousePos):
         if self.selected:
             return
 
         if self.rect.collidepoint(mousePos):
+            print("SELECTED!")
             self.selected = True
+            self.color = self.color_selected
             self.mouse_prev = mousePos
 
-    def unselect(self):
+
+            
+    def deselect(self):
         self.selected = False
+        self.color = self.color_normal
 
     def update(self):
-        self.pos_x = self.bone.pos_x2
-        self.pos_y = self.bone.pos_y2
-        self.rect = pg.Rect(self.pos_x -self.rad, self.pos_y - self.rad, 2*self.rad, 2*self.rad)
 
         if self.selected:
-            self.color = self.color_selected
-            #print("PROP ANGLE -> ", self.bone.getPropagatedAngle())
-        else:
-            self.color = self.color_normal
-        
 
-        if self.selected:
+            ## update our bone
             cur_mouse = pg.mouse.get_pos()
             dx = cur_mouse[0] - self.bone.pos_x1
             dy = cur_mouse[1] - self.bone.pos_y1
-            angle = math.atan2(-dy, dx)
-            
-            self.bone.angle = math.degrees(angle)
 
-            ## if not independent, 
-            if not self.bone.other_end:
-                self.bone.angle -= self.bone.getPropagatedAngle()
+            if (dx != 0 and dy != 0):
+                angle = math.atan2(-dy, dx)
+                self.bone.angle = angle
+                self.bone.calcPropagatedAngle()
+                self.bone.update()
+
+        ### update gimbal's rendering from bone pos
+        self.pos_x = self.bone.pos_x2
+        self.pos_y = self.bone.pos_y2
+        self.rect = pg.Rect(self.pos_x -self.rad, self.pos_y - self.rad, 2*self.rad, 2*self.rad)
+        
 
     def draw(self, screen):
         if self.visible:
@@ -82,34 +85,36 @@ class WunderGimbal(Gimbal):
         self.pos_y = bone.pos_y1
         self.rect = pg.Rect(self.pos_x - self.rad, self.pos_y - self.rad, 2 * self.rad, 2 * self.rad)
 
+        self.bone_pos = (bone.pos_x1, bone.pos_y1)
+    
+
+
     def update(self):
+        if self.selected:
+            cur_mouse = pg.mouse.get_pos() 
+            if self.bone.figure.position != cur_mouse:
+                self.bone.figure.set_position(cur_mouse)
+
+
         self.pos_x = self.bone.pos_x1
         self.pos_y = self.bone.pos_y1
         self.rect = pg.Rect(self.pos_x -self.rad, self.pos_y - self.rad, 2*self.rad, 2*self.rad)
 
-        if self.selected:
-            self.color = self.color_selected
-            #print("PROP ANGLE -> ", self.bone.getPropagatedAngle())
-        else:
-            self.color = self.color_normal
 
-
-        if self.selected:
-            cur_mouse = pg.mouse.get_pos()
-            dx = cur_mouse[0] - self.bone.pos_x1
-            dy = cur_mouse[1] - self.bone.pos_y1
             
-            self.bone.pos_x1 += dx
-            self.bone.pos_y1 += dy
-
-
 
 class Bone:
 
-    def __init__(self, wunder=True):
-        self.type = BoneType.LINE
-        self.length = -1
-        self.angle = 0
+    def __init__(self, figure, length, angle, wunder=True, b_type=BoneType.LINE):
+        self.figure = figure
+        self.type = b_type
+        self.length = length
+
+        self.angle = angle   # relative angle, or own angle
+        self.acc_angle = 0
+
+        self.abs_angle = 0   # absolute angle: total angle accumulated along path from root
+
         self.pos_x1 = 0
         self.pos_y1 = 0
         self.pos_x2 = 0
@@ -128,13 +133,7 @@ class Bone:
         self.gimbal = Gimbal(self)
         self.wunder_gimbal = WunderGimbal(self)
 
-        # animation stuff
-        self.current_frame = 0
-        self.frame_translations = []    # only used by root bone
-        self.frame_angles = []
-
-    def getPropagatedAngle(self):
-
+    def calcPropagatedAngle(self):
         ang = 0
         par  = self.parent
         while par:
@@ -142,64 +141,56 @@ class Bone:
             if par.other_end:
                 break
             par = par.parent
-        return ang
-    
-    def addFrame(self):
-        if self.wunderkind:
-            self.frame_translations.append((self.pos_x1, self.pos_x2))
-        self.frame_angles.append(self.angle)
+        
+        self.acc_angle = ang
+
 
     def update(self):
         
-        # account for higher/parent nodes
-        if (self.parent):
+        # for root bone, set position first
+        if self.wunderkind:
+            self.pos_x1, self.pos_y1 = self.figure.position
+        
+        ## non-moving bone starts at same pos as parent
+        elif self.other_end:
+            self.pos_x1 = self.parent.pos_x1
+            self.pos_y1 = self.parent.pos_y1
+
+        ## all other normal bones start at end of parent
+        else:
+
             self.pos_x1 = self.parent.pos_x2
             self.pos_y1 = self.parent.pos_y2
-            # special consideration for gimbals attached to wunderkind
-            # set non-moving end to gimbal start
-            if self.other_end:
-                self.pos_x1 = self.parent.pos_x1
-                self.pos_y1 = self.parent.pos_y1
-       
-        ang_parent = 0
-        if not self.other_end:
-            ang_parent = self.getPropagatedAngle()
 
-        ang = math.radians(self.angle + ang_parent)
+        
+        if not self.other_end:
+            self.angle -= self.acc_angle
+
+        ang = math.radians(self.angle)
         self.pos_x2 = self.pos_x1 + math.cos(ang) * self.length
         self.pos_y2 = self.pos_y1 - math.sin(ang) * self.length
 
-        self.gimbal.update()
-        if self.wunderkind:
-            self.wunder_gimbal.update()
         
-
-    def updateAll(self):
-        self.update()
         for child in self.children:
-            child.updateAll()
-
-        print("updateAll finished!")
-
-    #def updateGimbals(self):
-    #    self.gimbal.update()
-        #for child in self.children:
-        #    child.updateGimbals()
+            child.update()
+        
+       
 
     def checkPressed(self, mousePos):
-        self.gimbal.checkPressed(mousePos)
-        if self.wunderkind:
+         self.gimbal.checkPressed(mousePos)
+         if self.wunderkind:
             self.wunder_gimbal.checkPressed(mousePos)
-
-        for child in self.children:
-            child.checkPressed(mousePos)
     
     def unselectGimbals(self):
-        self.gimbal.unselect()
+        self.gimbal.deselect()
         if self.wunderkind:
-            self.wunder_gimbal.unselect()
-        for child in self.children:
-            child.unselectGimbals()
+            self.wunder_gimbal.deselect()
+    
+    def drawGimbals(self, screen):
+        self.gimbal.draw(screen)
+        if self.wunderkind:
+            self.wunder_gimbal.draw(screen)
+
 
     def draw(self, screen):
         #self.update()
@@ -216,21 +207,17 @@ class Bone:
         pg.draw.circle(screen, self.color, (int(self.pos_x1), int(self.pos_y1)), 10)
         pg.draw.circle(screen, self.color, (int(self.pos_x2), int(self.pos_y2)), 10)
 
-    def drawExtra(self, screen):
-        self.gimbal.draw(screen)
-        if self.wunderkind:
-            self.wunder_gimbal.draw(screen)
 
-
-    def drawAll(self, screen):
-        self.draw(screen)
         for child in self.children:
-            child.drawAll(screen)
+            child.draw(screen)
 
-    def drawAllExtra(self, screen):
-        self.drawExtra(screen)
+
+        
+    
+    def get_flat_hierarchy(self, mut_list):
         for child in self.children:
-            child.drawAllExtra(screen)
+            mut_list.append(child)
+            child.get_flat_hierarchy(mut_list)
 
 
 
@@ -238,14 +225,22 @@ class Bone:
         return f"Bone: Length=>{self.length} Angle=>{self.angle}"
 
 
-def constructBoneFromXMLNode(bone_node):
-
-    bone = Bone()
-    bone.length = float(bone_node.attrib["len"])
-    bone.angle = float(bone_node.attrib["angle"])
-    bone.frame_angles.append(bone.angle)
-
+def constructBoneFromXMLNode(fig, bone_node):
     
+    bone_len = float(bone_node.attrib["len"])
+    bone_angle = float(bone_node.attrib["angle"])
+    type_str = bone_node.attrib["type"]
+    type_map = {
+        "circle": BoneType.CIRCLE
+    }
+    bone_type = type_map.get(type_str, BoneType.LINE)
+
+    bone = Bone(fig, bone_len, bone_angle, b_type=bone_type)
+    
+
+    ## set other_end and color
+    # TODO: add check to ensure this can only be direct children
+    ##  of the root node / wunderkind bone
     if "w" in bone_node.attrib.keys():
         bone.other_end = True
 
@@ -254,12 +249,9 @@ def constructBoneFromXMLNode(bone_node):
         col = tuple(map(lambda x : int(x), cs))
         bone.color = col
 
-    type_str = bone_node.attrib["type"]
-    if type_str == "circle":
-        bone.type = BoneType.CIRCLE
     
     for child_node in bone_node:
-        child_bone = constructBoneFromXMLNode(child_node)
+        child_bone = constructBoneFromXMLNode(fig, child_node)
         child_bone.parent = bone
         bone.children.append(child_bone)
 
@@ -267,34 +259,62 @@ def constructBoneFromXMLNode(bone_node):
 
 
 class Figure:
-    def __init__(self, root):
+    def __init__(self):
+        self.position = (200, 240)
+        self.root = None
+
+    def init_root(self, root):
         self.root = root
-        self.root.pos_x1 = 200
-        self.root.pos_y1 = 240
-        self.root.frame_translations.append((self.root.pos_x1, self.root.pos_x2))
-        self.root.updateAll()
+        self.root.wunderkind = True
+        self.root.update()
+
+        hier = [self.root]
+        self.root.get_flat_hierarchy(hier)
+        self.flat_bones = hier
+
+        ### get linear bone list for colliderect checks
+    
+
+        
+    def set_position(self, pos):
+        self.position = pos
+        self.root.update()
 
     @classmethod
     def fromFile(cls, xml_fname):
+        figure = cls()
 
         tree = ET.parse(xml_fname)
         root_bone_node  = tree.getroot().find("bone")
-        root_bone = constructBoneFromXMLNode(root_bone_node)
-        root_bone.wunderkind = True
+        root_bone = constructBoneFromXMLNode(figure, root_bone_node)
 
-        return cls(root_bone)
+        figure.init_root(root_bone)
+
+        return figure 
+
     
     def addFrame(self):
         self.root.addFrame()
     
     def checkPressed(self, mouseCoords):
-        #self.root.checkPressedAll(mouseCoords)
-        self.root.checkPressed(mouseCoords)
+        for bone in self.flat_bones:
+            bone.checkPressed(mouseCoords)
     
+    
+    def unselectGimbals(self):
+        for bone in self.flat_bones:
+            bone.unselectGimbals()
+
+
     def update(self):
-        self.root.updateAll()
+        """Updates gimbals only at first """
+        self.root.wunder_gimbal.update()
+        for bone in self.flat_bones:
+            bone.gimbal.update()
+
 
     def draw(self, screen):
-        self.root.drawAll(screen)
-        self.root.drawAllExtra(screen)
+        self.root.draw(screen)
+        self.root.drawGimbals(screen)
+
 
