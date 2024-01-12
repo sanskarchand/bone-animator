@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from enum import Enum
 import math
 import pygame as pg
+#import pygame.gfxdraw
 import const
 
 class BoneType(Enum):
@@ -30,6 +31,7 @@ class Gimbal:
         self.old_angle = 0
         self.mouse_prev = (None, None)
 
+
     def checkPressed(self, mousePos):
         if self.selected:
             return
@@ -51,7 +53,7 @@ class Gimbal:
             #print("PROP ANGLE -> ", self.bone.getPropagatedAngle())
         else:
             self.color = self.color_normal
-
+        
 
         if self.selected:
             cur_mouse = pg.mouse.get_pos()
@@ -60,6 +62,8 @@ class Gimbal:
             angle = math.atan2(-dy, dx)
             
             self.bone.angle = math.degrees(angle)
+
+            ## if not independent, 
             if not self.bone.other_end:
                 self.bone.angle -= self.bone.getPropagatedAngle()
 
@@ -85,6 +89,7 @@ class WunderGimbal(Gimbal):
 
         if self.selected:
             self.color = self.color_selected
+            #print("PROP ANGLE -> ", self.bone.getPropagatedAngle())
         else:
             self.color = self.color_normal
 
@@ -101,7 +106,7 @@ class WunderGimbal(Gimbal):
 
 class Bone:
 
-    def __init__(self):
+    def __init__(self, wunder=True):
         self.type = BoneType.LINE
         self.length = -1
         self.angle = 0
@@ -113,8 +118,12 @@ class Bone:
     
         self.parent = None
         self.children = []
-        self.wunderkind = False # root bone; extra gimbal
-        self.other_end = False  # attached to translation joint
+        self.wunderkind = False # root bone; extra gimbal (translation)
+
+        ### e.g. torso is wunderkind, and parent of left_left and leg_right
+        ###  , both of which are other_end. The legs can rotate independently of the 
+        ###   torso despite their hierarchical position
+        self.other_end = False  
 
         self.gimbal = Gimbal(self)
         self.wunder_gimbal = WunderGimbal(self)
@@ -142,9 +151,12 @@ class Bone:
 
     def update(self):
         
+        # account for higher/parent nodes
         if (self.parent):
             self.pos_x1 = self.parent.pos_x2
             self.pos_y1 = self.parent.pos_y2
+            # special consideration for gimbals attached to wunderkind
+            # set non-moving end to gimbal start
             if self.other_end:
                 self.pos_x1 = self.parent.pos_x1
                 self.pos_y1 = self.parent.pos_y1
@@ -160,24 +172,26 @@ class Bone:
         self.gimbal.update()
         if self.wunderkind:
             self.wunder_gimbal.update()
-
+        
 
     def updateAll(self):
         self.update()
         for child in self.children:
             child.updateAll()
 
-    def updateGimbals(self):
-        self.gimbal.update()
-        for child in self.children:
-            child.updateGimbals()
+        print("updateAll finished!")
+
+    #def updateGimbals(self):
+    #    self.gimbal.update()
+        #for child in self.children:
+        #    child.updateGimbals()
 
     def checkPressed(self, mousePos):
         self.gimbal.checkPressed(mousePos)
         if self.wunderkind:
             self.wunder_gimbal.checkPressed(mousePos)
+
         for child in self.children:
-            print("CHECK PRESS")
             child.checkPressed(mousePos)
     
     def unselectGimbals(self):
@@ -197,6 +211,7 @@ class Bone:
         else:
             pg.draw.line(screen, self.color, (self.pos_x1, self.pos_y1),
                 (self.pos_x2, self.pos_y2), 20)
+            #pg.gfxdraw.line(screen, int(self.pos_x1), int(self.pos_y1), int(self.pos_x2), int(self.pos_y2), self.color)
         
         pg.draw.circle(screen, self.color, (int(self.pos_x1), int(self.pos_y1)), 10)
         pg.draw.circle(screen, self.color, (int(self.pos_x2), int(self.pos_y2)), 10)

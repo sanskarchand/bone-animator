@@ -2,12 +2,20 @@
 #PYGAME_DIM = (640, 400)
 CANVAS_DIM = (640, 480)
 TOTAL_DIM = (800, 600)
+
+RIGHT_CTRL_RECT_PARAMS = (
+        CANVAS_DIM[0],  # left
+        0,              # top
+        TOTAL_DIM[0] - CANVAS_DIM[0],     # width
+        TOTAL_DIM[1]    # height
+    )
 EXPORT_RECT = (20, 20, 320, 420)
 
-FPS = 60
+FPS = 1
 DIVIDER_X = 150
 
-BGCOLOR = (123, 150, 158)
+#BGCOLOR = (123, 150, 158)
+BGCOLOR = (0xdd, 0xdd, 0xdd)
 GREY = (155, 155, 155)
 RED = (141, 30, 43)
 COL_GIMB_ROT = (20, 169, 59)

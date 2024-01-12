@@ -3,7 +3,7 @@ import pygame as pg
 import Bone
 import const
 import os
-from gui.gui import GUI
+from gui.gui import GUI, Orientation
 from gui.const import POS_UNDEF
 
 # last change: 2020-11-22
@@ -34,13 +34,12 @@ class MainApplication:
         self.gui = GUI(self.main_screen)
 
         ## make rect
-        canv_w, canv_h = const.CANVAS_DIM
 
-        self.ctrl_rect = pg.Rect(0, 0, canv_w, canv_h)
-        self.ctrl_container = self.gui.make_horizontal_container(
-                                (self.ctrl_rect.x, self.ctrl_rect.y),
-                                self.ctrl_rect.w, self.ctrl_rect.h)
-
+        self.ctrl_rect = pg.Rect(*const.RIGHT_CTRL_RECT_PARAMS)
+        self.ctrl_container = self.gui.make_container_from_rect(
+                                        self.ctrl_rect,
+                                        Orientation.VERTICAL
+                                    )
         
         but_frame = self.gui.make_text_button(POS_UNDEF, 160, 20, "Add Frame", self.addFrame, ())
         self.ctrl_container.push_item(but_frame)
@@ -77,9 +76,13 @@ class MainApplication:
                     self.figure_def.root.unselectGimbals()
 
             
-            self.main_screen.fill(const.GREY)
-            pg.draw.rect(self.main_screen, const.BGCOLOR, self.ctrl_rect)
+            ### Wipe/Fill screen, and draw GUI
+            self.main_screen.fill(const.BGCOLOR)
+            pg.draw.rect(self.main_screen, const.GREY, self.ctrl_rect)
             self.gui.draw()
+
+            self.figure_def.update()
+            print("UPDATE FIN===================")
             self.figure_def.draw(self.main_screen)
             
             pg.display.update()

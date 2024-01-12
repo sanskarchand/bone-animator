@@ -1,0 +1,7 @@
+Fri 12 Jan 2024 09:52:56 PM +0545
+
+First things first, have to fix the squiggle/delay when I 
+move/rotate a non-leaf joint. FPS 120 fixes this, but shouldn't 
+have to rely on that I think.
+
+================================

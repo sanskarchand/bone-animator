@@ -1,20 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <figure name="protagonist">
-    <bone type="line" len="70" angle="90">
-        <bone type="line" len="70" angle="0">
+    <!-- torso/trunk. root node, one end is wunderkind -->
+    <bone type="line" len="70" angle="90" color="0|255|0">
+        <!-- upper torso-->
+        <bone type="line" len="70" angle="0" color="255|255|255">
+            <!-- head -->
             <bone type="circle" len="80" angle="0"/>
-            <bone type="line" color="55|55|55" len="80" angle="-90">
+            <!-- right arm -->
+            <bone type="line" len="80" angle="-90"> 
                 <bone type="line" len="60" angle="0"/>
             </bone>
+            <!-- left arm -->
             <bone type="line" color="55|55|55" len="80" angle="90"> 
                 <bone type="line" len="60" angle="0"/>
             </bone>
         </bone>
-        <bone w="w" type="line" len="90" angle="-60">
+
+        <!-- right leg, attached to wunderkind gimbal-->
+        <bone w="w" type="line" len="90" angle="-60"> 
             <bone  type="line" len="90" angle="0">
                 <bone type="line" len="20" angle="60"/>
             </bone>
         </bone>
+
+        <!-- left left, attached to wunderkind gimbal -->
         <bone w="w" type="line" len="90" angle="240">
             <bone  type="line" len="90" angle="0">
                 <bone type="line" len="20" angle="-60"/>

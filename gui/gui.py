@@ -309,9 +309,11 @@ class TextInput(GUIElem):
 
         if event.type == pg.KEYDOWN:
 
+            capslock_pressed = pygame.key.get_mods() & pygame.KMOD_CAPS
+
             # alphanumeric input
             if event.key >= ord('a') and event.key <= ord('z'):
-                if keys[pg.K_LSHIFT] or keys[pg.K_RSHIFT]:
+                if capslock_pressed or keys[pg.K_LSHIFT] or keys[pg.K_RSHIFT]:
                     self.text += chr(event.key - 32)
                 else:
                     self.text += chr(event.key)
@@ -439,6 +441,10 @@ class Container(GUIElem):
         self.gap = 20
         self.margin = (20, 0)
 
+    @classmethod
+    def from_pg_rect(cls, screen, pg_rect):
+        return cls(screen, (pg_rect.x, pg_rect.y), pg_rect.w, pg_rect.h)
+
     def set_orientation(self, ori):
         self.orientation = ori
         return self
@@ -504,6 +510,11 @@ class GUI:
 
     def add_elem(self, elem):
         self.elems.append(elem)
+    
+    def make_container_from_rect(self, rect, orientation: Orientation):
+        return Container.from_pg_rect(self.screen, rect)\
+                        .set_orientation(orientation)
+
 
     def make_horizontal_container(self, pos, width, height):
         return (Container(self.screen, pos, width, height)
