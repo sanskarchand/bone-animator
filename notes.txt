@@ -5,3 +5,9 @@ move/rotate a non-leaf joint. FPS 120 fixes this, but shouldn't
 have to rely on that I think.
 
 ================================
+Mon 02 Sep 2024 09:55:55 PM +0545
+
+Stil too wiggly when changing location (wunderkind gimbal),
+even after antialiasing.
+
+================================

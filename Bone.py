@@ -20,13 +20,13 @@ class BoneType(Enum):
 
 
 
-def get_line_polygon(pos1, pos2, thickness=10):
+def get_line_polygon(pos1, pos2, thickness=16):
     # CREDIT: https://stackoverflow.com/a/30599392
 
     pos1 = Point(*pos1)
     pos2 = Point(*pos2)
     
-    th = thickness = 20
+    th = thickness
     cent_l1 = Point((pos1.x + pos2.x)/2, (pos1.y + pos2.y)/2)
     length = math.sqrt((pos2.x-pos1.x)**2 + (pos2.y-pos1.y)**2)
     angle = math.atan2(pos1.y - pos2.y, pos1.x - pos2.x)
@@ -158,6 +158,7 @@ class Bone:
         self.pos_x2 = 0
         self.pos_y2 = 0
         self.color = (0, 0, 0)
+        self.thickness = 16
     
         self.parent = None
         self.children = []
@@ -252,20 +253,33 @@ class Bone:
             
             pg.draw.circle(screen, self.color, (cx, cy), int(self.length/2), 15)
         else:
-
-            #pg.draw.line(screen, self.color, (self.pos_x1, self.pos_y1),
-            #    (self.pos_x2, self.pos_y2), 20)
             #pg.gfxdraw.line(screen, int(self.pos_x1), int(self.pos_y1), int(self.pos_x2), int(self.pos_y2), self.color)
+
+            if const.ANTIALIAS_LINES:
+                self.drawLineAntiAliased(screen)
+            else:
+                self.drawLine(screen)
  
-            ### Draw line - antialiased.
 
-            polygon = get_line_polygon((self.pos_x1, self.pos_y1), (self.pos_x2, self.pos_y2), 10)
-            pg.gfxdraw.aapolygon(screen, polygon, self.color)
-            pg.gfxdraw.filled_polygon(screen, polygon, self.color)
-
-                   
+            
+              
         pg.draw.circle(screen, self.color, (int(self.pos_x1), int(self.pos_y1)), 10)
         pg.draw.circle(screen, self.color, (int(self.pos_x2), int(self.pos_y2)), 10)
+
+
+    def drawLine(self, screen):
+        pg.draw.line(screen, self.color,  (self.pos_x1, self.pos_y1),
+                (self.pos_x2, self.pos_y2), self.thickness)
+
+    
+    def drawLineAntiAliased(self, screen):
+        polygon = get_line_polygon((self.pos_x1, self.pos_y1), (self.pos_x2, self.pos_y2), 
+                                   self.thickness)
+        pg.gfxdraw.aapolygon(screen, polygon, self.color)
+        pg.gfxdraw.filled_polygon(screen, polygon, self.color)
+
+
+     
 
     def drawExtra(self, screen):
         self.gimbal.draw(screen)
