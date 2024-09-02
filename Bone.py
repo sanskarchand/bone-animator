@@ -2,15 +2,58 @@
 
 import xml.etree.ElementTree as ET
 from enum import Enum
+from collections import namedtuple
 import math
+from math import cos, sin
 import pygame as pg
+import pygame.gfxdraw
 #import pygame.gfxdraw
 import const
+
+
+Point = namedtuple("Point", "x y")
 
 class BoneType(Enum):
     UNDEF = 0
     LINE = 1
     CIRCLE = 2
+
+
+
+def get_line_polygon(pos1, pos2, thickness=10):
+    # CREDIT: https://stackoverflow.com/a/30599392
+
+    pos1 = Point(*pos1)
+    pos2 = Point(*pos2)
+    
+    th = thickness = 20
+    cent_l1 = Point((pos1.x + pos2.x)/2, (pos1.y + pos2.y)/2)
+    length = math.sqrt((pos2.x-pos1.x)**2 + (pos2.y-pos1.y)**2)
+    angle = math.atan2(pos1.y - pos2.y, pos1.x - pos2.x)
+
+    UL = Point(
+            cent_l1.x + (length/2.)*cos(angle) - (th/2.)*sin(angle),
+            cent_l1.y + (th/2.)*cos(angle) + (length/2.)*sin(angle)
+        )
+
+    UR = Point(
+            cent_l1.x - (length/2.)*cos(angle) - (th/2.)*sin(angle),
+            cent_l1.y + (th/2.)*cos(angle) - (length/2.)*sin(angle),
+    )
+
+    BL = Point(
+            cent_l1.x + (length/2.)*cos(angle) + (th/2.)*sin(angle),
+            cent_l1.y - (th/2.)*cos(angle) + (length/2.)*sin(angle)
+        )
+
+    BR = Point(
+            cent_l1.x - (length/2.)*cos(angle) + (th/2.)*sin(angle),
+            cent_l1.y - (th/2.)*cos(angle) - (length/2.)*sin(angle)
+        )
+
+
+    
+    return (UL, UR, BR, BL)
 
 class Gimbal:
     
@@ -209,10 +252,18 @@ class Bone:
             
             pg.draw.circle(screen, self.color, (cx, cy), int(self.length/2), 15)
         else:
-            pg.draw.line(screen, self.color, (self.pos_x1, self.pos_y1),
-                (self.pos_x2, self.pos_y2), 20)
+
+            #pg.draw.line(screen, self.color, (self.pos_x1, self.pos_y1),
+            #    (self.pos_x2, self.pos_y2), 20)
             #pg.gfxdraw.line(screen, int(self.pos_x1), int(self.pos_y1), int(self.pos_x2), int(self.pos_y2), self.color)
-        
+ 
+            ### Draw line - antialiased.
+
+            polygon = get_line_polygon((self.pos_x1, self.pos_y1), (self.pos_x2, self.pos_y2), 10)
+            pg.gfxdraw.aapolygon(screen, polygon, self.color)
+            pg.gfxdraw.filled_polygon(screen, polygon, self.color)
+
+                   
         pg.draw.circle(screen, self.color, (int(self.pos_x1), int(self.pos_y1)), 10)
         pg.draw.circle(screen, self.color, (int(self.pos_x2), int(self.pos_y2)), 10)
 
