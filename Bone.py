@@ -125,25 +125,31 @@ class WunderGimbal(Gimbal):
         self.pos_y = bone.pos_y1
         self.rect = pg.Rect(self.pos_x - self.rad, self.pos_y - self.rad, 2 * self.rad, 2 * self.rad)
 
-    def update(self):
-        self.pos_x = self.bone.pos_x1
-        self.pos_y = self.bone.pos_y1
-        self.rect = pg.Rect(self.pos_x -self.rad, self.pos_y - self.rad, 2*self.rad, 2*self.rad)
+        self.mouse_prev = [0, 0]
 
+    def update(self):
+        
         if self.selected:
             self.color = self.color_selected
             #print("PROP ANGLE -> ", self.bone.getPropagatedAngle())
         else:
             self.color = self.color_normal
 
-
         if self.selected:
             cur_mouse = pg.mouse.get_pos()
-            dx = cur_mouse[0] - self.bone.pos_x1
-            dy = cur_mouse[1] - self.bone.pos_y1
+            dx = cur_mouse[0] - self.mouse_prev[0]
+            dy = cur_mouse[1] - self.mouse_prev[1]
             
             self.bone.pos_x1 += dx
             self.bone.pos_y1 += dy
+
+            self.mouse_prev = cur_mouse
+        
+        # have to calc after modification. I was fucking stupid.
+        self.pos_x = self.bone.pos_x1
+        self.pos_y = self.bone.pos_y1
+        self.rect = pg.Rect(self.pos_x -self.rad, self.pos_y - self.rad, 2*self.rad, 2*self.rad)
+
 
 
 
@@ -214,16 +220,19 @@ class Bone:
         self.pos_y2 = self.pos_y1 - math.sin(ang) * self.length
 
         self.gimbal.update()
-        if self.wunderkind:
-            self.wunder_gimbal.update()
-        
+
 
     def updateAll(self):
+
+        if self.wunderkind:
+            self.wunder_gimbal.update()
+
+
         self.update()
         for child in self.children:
             child.updateAll()
 
-        print("updateAll finished!")
+        #print("updateAll finished!")
 
     #def updateGimbals(self):
     #    self.gimbal.update()

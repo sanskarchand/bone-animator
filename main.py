@@ -82,7 +82,7 @@ class MainApplication:
             self.gui.draw()
 
             self.figure_def.update()
-            print("UPDATE FIN===================")
+            #print("UPDATE FIN===================")
             self.figure_def.draw(self.main_screen)
             
             pg.display.update()
